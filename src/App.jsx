@@ -18,6 +18,8 @@ import ArtDistrict from './components/ArtDistrict';
 import FormPublicRedirect from './components/FormPublicRedirect';
 import Payments from './components/Payments';
 import SeatingArrangement from './components/SeatingArrangement';
+import Coupons from './components/Coupons';
+import Ecommerce from './components/Ecommerce';
 
 // Protected route wrapper
 const ProtectedRoute = ({ children }) => {
@@ -73,6 +75,8 @@ function App() {
           <Route path="subscribers" element={<EventSubscribers />} />
           <Route path="art-district" element={<ArtDistrict />} />
           <Route path="payments" element={<Payments />} />
+          <Route path="ecommerce" element={<Ecommerce />} />
+          <Route path="coupons" element={<Coupons />} />
           <Route path="seating" element={<SeatingArrangement />} />
           <Route path="settings" element={<SystemSettings />} />
         </Route>

@@ -47,5 +47,5 @@
   "devDependencies": {
     "concurrently": "^7.6.0"
   },
-  "proxy": "https://sverxiioo.nanoprofiles.com"
+  "proxy": "http://localhost:5000"
 }

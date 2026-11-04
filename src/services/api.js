@@ -357,4 +357,68 @@ export const artDistrictAPI = {
   },
 };
 
+// Coupon Management API
+export const couponsAPI = {
+  getCoupons: async (params = {}) => {
+    const response = await api.get('/coupons', { params });
+    return response.data;
+  },
+  getCoupon: async (id) => {
+    const response = await api.get(`/coupons/${id}`);
+    return response.data;
+  },
+  createCoupon: async (couponData) => {
+    const response = await api.post('/coupons', couponData);
+    return response.data;
+  },
+  updateCoupon: async (id, couponData) => {
+    const response = await api.put(`/coupons/${id}`, couponData);
+    return response.data;
+  },
+  toggleCoupon: async (id) => {
+    const response = await api.patch(`/coupons/${id}/toggle`);
+    return response.data;
+  },
+  deleteCoupon: async (id) => {
+    const response = await api.delete(`/coupons/${id}`);
+    return response.data;
+  },
+  validateCoupon: async (payload) => {
+    const response = await api.post('/coupons/validate', payload);
+    return response.data;
+  },
+};
+
+// E-Commerce Management & Payments API
+export const ecommerceAPI = {
+  getSellers: async (params = {}) => {
+    const response = await api.get('/ecommerce/sellers', { params });
+    return response.data;
+  },
+  getSellerPayment: async (artistId) => {
+    const response = await api.get(`/ecommerce/sellers/${artistId}/payment`);
+    return response.data;
+  },
+  updateSeller: async (artistId, data) => {
+    const response = await api.put(`/ecommerce/sellers/${artistId}`, data);
+    return response.data;
+  },
+  getPayments: async (params = {}) => {
+    const response = await api.get('/ecommerce/payments', { params });
+    return response.data;
+  },
+  createPayment: async (data) => {
+    const response = await api.post('/ecommerce/payments', data);
+    return response.data;
+  },
+  updatePayment: async (id, data) => {
+    const response = await api.put(`/ecommerce/payments/${id}`, data);
+    return response.data;
+  },
+  deletePayment: async (id) => {
+    const response = await api.delete(`/ecommerce/payments/${id}`);
+    return response.data;
+  },
+};
+
 export default api;

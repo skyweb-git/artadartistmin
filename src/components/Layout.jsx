@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { BarChart3, Users, Package, Calendar, Settings, Menu, X, ImageIcon, Palette, LogOut, User, Megaphone, FileText, Mail, MapPin, CreditCard, Armchair } from 'lucide-react';
+import { BarChart3, Users, Package, Calendar, Settings, Menu, X, ImageIcon, Palette, LogOut, User, Megaphone, FileText, Mail, MapPin, CreditCard, Armchair, Ticket, ShoppingBag } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 const logo = '/logo.png';
@@ -30,6 +30,8 @@ const Layout = () => {
     { path: '/art-district', icon: MapPin, label: 'ArtDistrict' },
     { path: '/seating', icon: Armchair, label: 'Seating Arrangement' },
     { path: '/payments', icon: CreditCard, label: 'Payments' },
+    { path: '/ecommerce', icon: ShoppingBag, label: 'E-Commerce' },
+    { path: '/coupons', icon: Ticket, label: 'Coupons' },
     { path: '/settings', icon: Settings, label: 'Settings' },
   ];
 

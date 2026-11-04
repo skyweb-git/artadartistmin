@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { adminAPI } from '../services/api';
-import { Search, Filter, Plus, Edit, Trash2, Package, Eye, IndianRupee, Calendar } from 'lucide-react';
+import { adminAPI, ecommerceAPI } from '../services/api';
+import { Search, Filter, Plus, Edit, Trash2, Package, Eye, IndianRupee, Calendar, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Products = () => {
@@ -36,6 +36,8 @@ const Products = () => {
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageChanged, setImageChanged] = useState(false);
+  const [sellerInfo, setSellerInfo] = useState(null);
+  const [fetchingSellerPayment, setFetchingSellerPayment] = useState(false);
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -106,11 +108,12 @@ const Products = () => {
     });
   };
 
-  const openEdit = (product) => {
+  const openEdit = async (product) => {
     setEditingProduct(product);
     const firstImage = product?.images?.[0];
     const firstUrl = typeof firstImage === 'string' ? firstImage : (firstImage?.url || '');
     const firstAlt = typeof firstImage === 'object' ? (firstImage?.alt || '') : '';
+    const artistId = product?.artistProfile?._id || product?.artistProfile || '';
 
     setEditForm({
       name: product?.name || '',
@@ -118,13 +121,28 @@ const Products = () => {
       category: product?.category || 'painting',
       price: product?.price ?? '',
       status: product?.status || 'available',
-      artistProfile: product?.artistProfile?._id || '',
+      artistProfile: artistId,
       imageUrl: firstUrl,
       imageAlt: firstAlt,
       paymentLink: product?.paymentLink || '',
     });
     setImageChanged(false);
     setUploadingImage(false);
+
+    if (artistId) {
+      try {
+        setFetchingSellerPayment(true);
+        const sInfo = await ecommerceAPI.getSellerPayment(artistId);
+        setSellerInfo(sInfo);
+      } catch (err) {
+        console.error('Error fetching artist payment:', err);
+        setSellerInfo(null);
+      } finally {
+        setFetchingSellerPayment(false);
+      }
+    } else {
+      setSellerInfo(null);
+    }
   };
 
   const openAdd = () => {
@@ -140,8 +158,54 @@ const Products = () => {
       imageAlt: '',
       paymentLink: '',
     });
+    setSellerInfo(null);
     setImageChanged(false);
     setUploadingImage(false);
+  };
+
+  const handleArtistChange = async (artistId) => {
+    setEditForm((f) => ({ ...f, artistProfile: artistId }));
+    if (!artistId) {
+      setSellerInfo(null);
+      return;
+    }
+    try {
+      setFetchingSellerPayment(true);
+      const sInfo = await ecommerceAPI.getSellerPayment(artistId);
+      setSellerInfo(sInfo);
+      if (sInfo?.paymentLink) {
+        setEditForm((f) => ({ ...f, paymentLink: sInfo.paymentLink }));
+        toast.success(`Auto-filled E-Commerce payment link for ${sInfo.name || 'artist'}`);
+      } else {
+        toast('Artist selected. No default E-Commerce payment link configured yet.', { icon: 'ℹ️' });
+      }
+    } catch (err) {
+      console.error('Error fetching artist payment link:', err);
+    } finally {
+      setFetchingSellerPayment(false);
+    }
+  };
+
+  const handleSyncArtistPayment = async () => {
+    if (!editForm.artistProfile) {
+      toast.error('Please select an artist first');
+      return;
+    }
+    try {
+      setFetchingSellerPayment(true);
+      const sInfo = await ecommerceAPI.getSellerPayment(editForm.artistProfile);
+      setSellerInfo(sInfo);
+      if (sInfo?.paymentLink) {
+        setEditForm((f) => ({ ...f, paymentLink: sInfo.paymentLink }));
+        toast.success('Updated payment link from artist E-Commerce setup');
+      } else {
+        toast.error('This artist does not have an E-Commerce payment link set up');
+      }
+    } catch (err) {
+      toast.error('Failed to fetch artist payment setup');
+    } finally {
+      setFetchingSellerPayment(false);
+    }
   };
 
   const closeEdit = () => {
@@ -433,23 +497,56 @@ const Products = () => {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Artist profile (from Admin Artists)</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700">Artist profile (from Admin Artists)</label>
+                  {fetchingSellerPayment && (
+                    <span className="text-xs text-blue-600 animate-pulse flex items-center gap-1">
+                      <RefreshCw size={11} className="animate-spin" /> Fetching E-Commerce payment link...
+                    </span>
+                  )}
+                </div>
                 <select
                   className="input"
                   value={editForm.artistProfile}
-                  onChange={(e) => setEditForm((f) => ({ ...f, artistProfile: e.target.value }))}
+                  onChange={(e) => handleArtistChange(e.target.value)}
                 >
                   <option value="">None</option>
                   {artists.map((a) => (
                     <option key={a._id} value={a._id}>
-                      {a.name} - {a.artForm}
+                      {a.name} - {a.artForm} {a.isEcommerceSeller ? '★ (Approved Seller)' : ''}
                     </option>
                   ))}
                 </select>
+
+                {/* Seller Status Feedback */}
+                {editForm.artistProfile && sellerInfo && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {sellerInfo.isEcommerceSeller ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <CheckCircle size={13} className="text-emerald-600" />
+                        Approved E-Commerce Seller
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                        <AlertCircle size={13} className="text-amber-600" />
+                        Not enabled as E-Commerce Seller (configure in E-Commerce page)
+                      </span>
+                    )}
+                    {sellerInfo.paymentLink ? (
+                      <span className="text-xs text-gray-500 truncate max-w-xs" title={sellerInfo.paymentLink}>
+                        Default link: <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-700">{sellerInfo.paymentLink.slice(0, 28)}...</code>
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400 italic">
+                        No default payment link configured for this artist.
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
                 <input
                   className="input"
                   type="number"
@@ -460,14 +557,30 @@ const Products = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Payment Link</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700">Payment Link</label>
+                  {editForm.artistProfile && (
+                    <button
+                      type="button"
+                      onClick={handleSyncArtistPayment}
+                      className="text-xs text-red-600 hover:text-red-700 font-medium inline-flex items-center gap-1 hover:underline"
+                      title="Sync with artist's E-Commerce payment link"
+                    >
+                      <RefreshCw size={11} className={fetchingSellerPayment ? 'animate-spin' : ''} />
+                      Fetch from Artist
+                    </button>
+                  )}
+                </div>
                 <input
                   className="input"
                   type="url"
-                  placeholder="https://rzp.io/..."
+                  placeholder="https://rzp.io/... or payment link"
                   value={editForm.paymentLink || ''}
                   onChange={(e) => setEditForm((f) => ({ ...f, paymentLink: e.target.value }))}
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  Automatically fetched from the artist's E-Commerce settings.
+                </p>
               </div>
 
               <div className="md:col-span-2">
